@@ -104,6 +104,7 @@ export class Sidebar {
         <div class="tags-list" id="sidebar-tags"></div>
       </div>
     `;
+    )
 
     this.setupEventListeners(container);
     this.renderTags();
