@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
+import { resolve } from 'path';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   root: '.',
   build: {
     outDir: 'dist-renderer',
@@ -9,4 +10,14 @@ export default defineConfig({
   server: {
     port: 3000,
   },
-});
+  define: {
+    __THEME__: JSON.stringify(mode === 'punky' ? 'punky' : 'default'),
+  },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        additionalData: `@import "${resolve(__dirname, `src/renderer/themes/${mode === 'punky' ? 'punky' : 'default'}.scss`)}";`
+      }
+    }
+  }
+}));
