@@ -1,5 +1,4 @@
 import './style.css';
-import './themes/default.scss';
 import { TagManager } from './components/TagManager.js';
 import { MiniAppGrid } from './components/MiniAppGrid.js';
 import { Sidebar } from './components/Sidebar.js';
