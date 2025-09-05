@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo List</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 1rem;
+            background: #f8fafc;
+            color: #1e293b;
+        }
+        .todo-app {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .header h1 {
+            margin: 0;
+            color: #1e293b;
+            font-size: 2rem;
+        }
+        .add-todo {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        .todo-input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+        .todo-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            padding: 0.5rem;
+            font-size: 0.875rem;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        .todo-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .todo-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s;
+        }
+        .todo-item:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .todo-item.completed {
+            background: #f0f9ff;
+            border-color: #bae6fd;
+        }
+        .todo-checkbox {
+            width: 1.25rem;
+            height: 1.25rem;
+            cursor: pointer;
+        }
+        .todo-text {
+            flex: 1;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        .todo-item.completed .todo-text {
+            text-decoration: line-through;
+            color: #64748b;
+        }
+        .todo-date {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e5e7eb;
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #64748b;
+        }
+        .empty-state p {
+            margin: 0;
+            font-size: 1.125rem;
+        }
+        .empty-state small {
+            display: block;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="todo-app">
+        <div class="header">
+            <h1>✅ Todo List</h1>
+        </div>
+        
+        <div class="add-todo">
+            <input type="text" class="todo-input" id="todo-input" placeholder="Add a new task..." maxlength="200">
+            <button class="btn btn-primary" onclick="addTodo()">Add</button>
+        </div>
+        
+        <ul class="todo-list" id="todo-list">
+            <!-- Todos will be rendered here -->
+        </ul>
+        
+        <div class="stats" id="stats">
+            <span id="total-count">0 tasks</span>
+            <span id="completed-count">0 completed</span>
+        </div>
+    </div>
+
+    <script>
+        let todos = JSON.parse(localStorage.getItem('todos') || '[]');
+
+        function saveTodos() {
+            localStorage.setItem('todos', JSON.stringify(todos));
+        }
+
+        function renderTodos() {
+            const todoList = document.getElementById('todo-list');
+            
+            if (todos.length === 0) {
+                todoList.innerHTML = `
+                    <div class="empty-state">
+                        <p>No tasks yet!</p>
+                        <small>Add your first task above to get started</small>
+                    </div>
+                `;
+            } else {
+                todoList.innerHTML = todos.map(todo => `
+                    <li class="todo-item ${todo.completed ? 'completed' : ''}">
+                        <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''} 
+                               onchange="toggleTodo(${todo.id})">
+                        <span class="todo-text">${todo.text}</span>
+                        <span class="todo-date">${new Date(todo.createdAt).toLocaleDateString()}</span>
+                        <button class="btn btn-danger" onclick="deleteTodo(${todo.id})">Delete</button>
+                    </li>
+                `).join('');
+            }
+            
+            updateStats();
+        }
+
+        function updateStats() {
+            const totalCount = todos.length;
+            const completedCount = todos.filter(todo => todo.completed).length;
+            
+            document.getElementById('total-count').textContent = `${totalCount} task${totalCount !== 1 ? 's' : ''}`;
+            document.getElementById('completed-count').textContent = `${completedCount} completed`;
+        }
+
+        function addTodo() {
+            const input = document.getElementById('todo-input');
+            const text = input.value.trim();
+            
+            if (text) {
+                const newTodo = {
+                    id: Date.now(),
+                    text: text,
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                };
+                
+                todos.unshift(newTodo);
+                saveTodos();
+                renderTodos();
+                input.value = '';
+            }
+        }
+
+        function toggleTodo(id) {
+            const todo = todos.find(t => t.id === id);
+            if (todo) {
+                todo.completed = !todo.completed;
+                saveTodos();
+                renderTodos();
+            }
+        }
+
+        function deleteTodo(id) {
+            todos = todos.filter(t => t.id !== id);
+            saveTodos();
+            renderTodos();
+        }
+
+        // Event listeners
+        document.getElementById('todo-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addTodo();
+            }
+        });
+
+        // Initial render
+        renderTodos();
+    </script>
+</body>
+</html>
