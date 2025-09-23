@@ -15,7 +15,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   miniApps: {
     getAll: () => ipcRenderer.invoke('miniapps:getAll'),
     launch: (miniAppId) => ipcRenderer.invoke('miniapps:launch', miniAppId),
-    install: (miniAppPath) => ipcRenderer.invoke('miniapps:install', miniAppPath)
+    install: (miniAppPath) => ipcRenderer.invoke('miniapps:install', miniAppPath),
+    getTags: (miniAppId) => ipcRenderer.invoke('miniapps:getTags', miniAppId),
+    importTags: (miniAppId, tags) => ipcRenderer.invoke('miniapps:importTags', miniAppId, tags)
   },
 
   // Menu events

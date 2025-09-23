@@ -79,6 +79,59 @@ class SuperApp {
     ipcMain.handle('miniapps:install', async (event, miniAppPath) => {
       return await this.miniAppManager.installMiniApp(miniAppPath);
     });
+
+    // Tag import from miniapps
+    ipcMain.handle('miniapps:getTags', async (event, miniAppId) => {
+      return await this.miniAppManager.getMiniAppTags(miniAppId);
+    });
+
+    ipcMain.handle('miniapps:importTags', async (event, miniAppId, tags) => {
+      return await this.importTagsFromMiniApp(miniAppId, tags);
+    });
+  }
+
+  async importTagsFromMiniApp(miniAppId, miniAppTags) {
+    const results = {
+      imported: 0,
+      skipped: 0,
+      errors: []
+    };
+
+    for (const miniAppTag of miniAppTags) {
+      try {
+        // Check if tag already exists in superapp
+        const existingTags = await this.dbManager.getAllTags();
+        const existingTag = existingTags.find(tag => 
+          tag.name.toLowerCase() === miniAppTag.name.toLowerCase()
+        );
+
+        let superAppTagId;
+        if (existingTag) {
+          superAppTagId = existingTag.id;
+          results.skipped++;
+        } else {
+          // Create new tag in superapp
+          const newTag = await this.dbManager.createTag({
+            name: miniAppTag.name,
+            color: miniAppTag.color || '#3B82F6',
+            description: miniAppTag.description || `Imported from ${miniAppId}`
+          });
+          superAppTagId = newTag.id;
+          results.imported++;
+        }
+
+        // Update miniapp tag with external_id
+        await this.miniAppManager.updateMiniAppTagExternalId(
+          miniAppId, 
+          miniAppTag.id, 
+          superAppTagId
+        );
+      } catch (error) {
+        results.errors.push(`Failed to import tag "${miniAppTag.name}": ${error.message}`);
+      }
+    }
+
+    return results;
   }
 
   createMenu() {

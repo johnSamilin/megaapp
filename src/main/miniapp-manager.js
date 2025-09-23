@@ -134,6 +134,35 @@ class MiniAppManager {
       throw new Error(`Failed to install miniapp: ${error.message}`);
     }
   }
+
+  async getMiniAppTags(miniAppId) {
+    // This would typically read from the miniapp's local storage or database
+    // For now, we'll simulate some sample tags
+    const sampleTags = {
+      'notes': [
+        { id: 1, name: 'Personal', color: '#10b981', description: 'Personal notes' },
+        { id: 2, name: 'Work', color: '#3b82f6', description: 'Work-related notes' },
+        { id: 3, name: 'Ideas', color: '#f59e0b', description: 'Creative ideas' }
+      ],
+      'todo': [
+        { id: 1, name: 'Urgent', color: '#ef4444', description: 'Urgent tasks' },
+        { id: 2, name: 'Personal', color: '#10b981', description: 'Personal tasks' },
+        { id: 3, name: 'Shopping', color: '#8b5cf6', description: 'Shopping lists' }
+      ],
+      'calculator': [
+        { id: 1, name: 'Math', color: '#06b6d4', description: 'Mathematical calculations' }
+      ]
+    };
+
+    return sampleTags[miniAppId] || [];
+  }
+
+  async updateMiniAppTagExternalId(miniAppId, tagId, externalId) {
+    // This would typically update the miniapp's local storage or database
+    // to store the external_id (superapp's tag id) for synchronization
+    console.log(`Updated miniapp ${miniAppId} tag ${tagId} with external_id ${externalId}`);
+    return true;
+  }
 }
 
 module.exports = { MiniAppManager };
