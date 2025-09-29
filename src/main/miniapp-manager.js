@@ -59,65 +59,31 @@ class MiniAppManager {
       throw new Error(`MiniApp ${miniAppId} not found`);
     }
 
-    // Check if window is already open
-    if (this.miniAppWindows.has(miniAppId)) {
-      const window = this.miniAppWindows.get(miniAppId);
-      if (!window.isDestroyed()) {
-        window.focus();
-        return { success: true, action: 'focused', miniAppId };
-      }
-    }
-
-    // Create new window for miniapp
-    const miniAppWindow = new BrowserWindow({
-      width: 800,
-      height: 600,
-      minWidth: 400,
-      minHeight: 300,
-      title: miniApp.name,
-      webPreferences: {
-        nodeIntegration: false,
-        contextIsolation: true,
-        preload: path.join(__dirname, 'miniapp-preload.js')
-      },
-      parent: null,
-      modal: false
-    });
-
-    // Load miniapp content
+    // Get miniapp content path
     const miniAppPath = path.join(__dirname, '..', miniApp.path, 'index.html');
     try {
       await fs.access(miniAppPath);
-      miniAppWindow.loadFile(miniAppPath);
-      
-      // Inject miniapp ID into the window
-      miniAppWindow.webContents.once('dom-ready', () => {
-        miniAppWindow.webContents.executeJavaScript(`
-          window.__MINIAPP_ID__ = '${miniAppId}';
-        `);
-      });
+      return { 
+        success: true, 
+        action: 'launched', 
+        miniAppId, 
+        title: miniApp.name,
+        path: miniAppPath,
+        icon: miniApp.icon
+      };
     } catch (error) {
-      // Fallback to a default miniapp template
-      miniAppWindow.loadFile(path.join(__dirname, '../miniapps/template/index.html'));
-      miniAppWindow.webContents.once('dom-ready', () => {
-        miniAppWindow.webContents.executeJavaScript(`
-          window.__MINIAPP_ID__ = '${miniAppId}';
-        `);
-        miniAppWindow.webContents.executeJavaScript(`
-          document.title = '${miniApp.name}';
-          document.querySelector('h1').textContent = '${miniApp.name}';
-          document.querySelector('p').textContent = '${miniApp.description}';
-        `);
-      });
+      // Return template path as fallback
+      return { 
+        success: true, 
+        action: 'launched', 
+        miniAppId, 
+        title: miniApp.name,
+        path: path.join(__dirname, '../miniapps/template/index.html'),
+        icon: miniApp.icon,
+        isTemplate: true,
+        description: miniApp.description
+      };
     }
-
-    this.miniAppWindows.set(miniAppId, miniAppWindow);
-
-    miniAppWindow.on('closed', () => {
-      this.miniAppWindows.delete(miniAppId);
-    });
-
-    return { success: true, action: 'launched', miniAppId, title: miniApp.name };
   }
 
   async installMiniApp(miniAppPath) {

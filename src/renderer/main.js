@@ -35,6 +35,20 @@ class SuperAppRenderer {
           </header>
           <div class="content-area">
             <div class="view-container" id="view-container"></div>
+            <div class="miniapp-container" id="miniapp-container" style="display: none;">
+              <div class="miniapp-header">
+                <div class="miniapp-info">
+                  <span class="miniapp-icon" id="miniapp-icon">📱</span>
+                  <span class="miniapp-title" id="miniapp-title">MiniApp</span>
+                </div>
+                <div class="miniapp-controls">
+                  <button class="btn btn-secondary" id="close-miniapp-btn">✕ Close</button>
+                </div>
+              </div>
+              <div class="miniapp-content">
+                <iframe id="miniapp-frame" src="" frameborder="0"></iframe>
+              </div>
+            </div>
           </div>
         </main>
       </div>
@@ -81,6 +95,11 @@ class SuperAppRenderer {
     // MiniApp events
     document.addEventListener('miniapp-launch', (e) => {
       this.launchMiniApp(e.detail.miniAppId);
+    });
+
+    // Close miniapp button
+    document.getElementById('close-miniapp-btn').addEventListener('click', () => {
+      this.closeMiniApp();
     });
   }
 
@@ -185,11 +204,198 @@ class SuperAppRenderer {
 
   async launchMiniApp(miniAppId) {
     try {
-      await window.electronAPI.miniApps.launch(miniAppId);
+      const result = await window.electronAPI.miniApps.launch(miniAppId);
+      if (result.success) {
+        this.showMiniApp(result);
+      }
     } catch (error) {
       console.error('Failed to launch miniapp:', error);
       alert('Failed to launch miniapp: ' + error.message);
     }
+  }
+
+  showMiniApp(miniAppData) {
+    const { miniAppId, title, path, icon, isTemplate, description } = miniAppData;
+    
+    // Hide main content and show miniapp container
+    document.getElementById('view-container').style.display = 'none';
+    document.getElementById('miniapp-container').style.display = 'flex';
+    
+    // Update miniapp header
+    document.getElementById('miniapp-icon').textContent = icon || '📱';
+    document.getElementById('miniapp-title').textContent = title;
+    
+    // Load miniapp in iframe
+    const iframe = document.getElementById('miniapp-frame');
+    
+    if (isTemplate) {
+      // For template, create a data URL with custom content
+      const templateContent = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>${title}</title>
+            <style>
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    margin: 0;
+                    padding: 2rem;
+                    background: #f8fafc;
+                    color: #1e293b;
+                }
+                .container {
+                    max-width: 600px;
+                    margin: 0 auto;
+                    background: white;
+                    padding: 2rem;
+                    border-radius: 0.75rem;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+                }
+                h1 {
+                    color: #3b82f6;
+                    margin-bottom: 1rem;
+                }
+                p {
+                    line-height: 1.6;
+                    color: #64748b;
+                }
+                .status {
+                    background: #f0f9ff;
+                    border: 1px solid #bae6fd;
+                    border-radius: 0.5rem;
+                    padding: 1rem;
+                    margin-top: 1rem;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>${title}</h1>
+                <p>${description || 'This miniapp is loading...'}</p>
+                <div class="status">
+                    <strong>Status:</strong> MiniApp loaded successfully
+                </div>
+            </div>
+            <script>
+                window.__MINIAPP_ID__ = '${miniAppId}';
+                console.log('MiniApp ${miniAppId} loaded in embedded mode');
+            </script>
+        </body>
+        </html>
+      `;
+      iframe.src = 'data:text/html;charset=utf-8,' + encodeURIComponent(templateContent);
+    } else {
+      // For regular miniapps, we need to load the file content and inject the miniapp ID
+      this.loadMiniAppContent(path, miniAppId).then(content => {
+        iframe.src = 'data:text/html;charset=utf-8,' + encodeURIComponent(content);
+      }).catch(error => {
+        console.error('Failed to load miniapp content:', error);
+        iframe.src = 'data:text/html;charset=utf-8,' + encodeURIComponent(`
+          <html><body style="font-family: system-ui; padding: 2rem; text-align: center;">
+            <h2>Error Loading MiniApp</h2>
+            <p>Failed to load ${title}</p>
+            <p style="color: #ef4444; font-size: 0.875rem;">${error.message}</p>
+          </body></html>
+        `);
+      });
+    }
+  }
+
+  async loadMiniAppContent(filePath, miniAppId) {
+    try {
+      // Read file content from main process
+      const result = await window.electronAPI.miniApps.readFile(filePath);
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      
+      let content = result.content;
+      
+      // Inject miniapp ID into the content
+      const scriptInjection = `
+        <script>
+          window.__MINIAPP_ID__ = '${miniAppId}';
+          
+          // Expose miniAppAPI to the iframe
+          window.miniAppAPI = {
+            storage: {
+              setItem: (key, data) => {
+                return window.parent.electronAPI?.miniApps?.storage?.setItem?.('${miniAppId}', key, data) || 
+                       Promise.resolve({ success: false, error: 'API not available' });
+              },
+              getItem: (key) => {
+                return window.parent.electronAPI?.miniApps?.storage?.getItem?.('${miniAppId}', key) || 
+                       Promise.resolve(null);
+              },
+              getAllKeys: () => {
+                return window.parent.electronAPI?.miniApps?.storage?.getAllKeys?.('${miniAppId}') || 
+                       Promise.resolve([]);
+              },
+              getAllData: () => {
+                return window.parent.electronAPI?.miniApps?.storage?.getAllData?.('${miniAppId}') || 
+                       Promise.resolve({});
+              },
+              removeItem: (key) => {
+                return window.parent.electronAPI?.miniApps?.storage?.removeItem?.('${miniAppId}', key) || 
+                       Promise.resolve({ success: false });
+              },
+              clear: () => {
+                return window.parent.electronAPI?.miniApps?.storage?.clear?.('${miniAppId}') || 
+                       Promise.resolve({ success: false });
+              },
+              hasItem: (key) => {
+                return window.parent.electronAPI?.miniApps?.storage?.hasItem?.('${miniAppId}', key) || 
+                       Promise.resolve(false);
+              },
+              getStorageInfo: () => {
+                return window.parent.electronAPI?.miniApps?.storage?.getStorageInfo?.('${miniAppId}') || 
+                       Promise.resolve({ totalKeys: 0, totalSize: 0 });
+              }
+            },
+            tags: {
+              getAll: () => {
+                return window.parent.electronAPI?.tags?.getAll?.() || 
+                       Promise.resolve([]);
+              },
+              create: (tagData) => {
+                return window.parent.electronAPI?.tags?.create?.(tagData) || 
+                       Promise.resolve(null);
+              }
+            },
+            utils: {
+              showNotification: (title, body) => {
+                if (window.parent.Notification) {
+                  new window.parent.Notification(title, { body });
+                }
+              },
+              getAppInfo: () => ({
+                platform: 'embedded',
+                version: '1.0.0'
+              }),
+              getMiniAppId: () => '${miniAppId}'
+            }
+          };
+        </script>
+      `;
+      
+      // Insert the script before the closing body tag
+      content = content.replace('</body>', scriptInjection + '</body>');
+      
+      return content;
+    } catch (error) {
+      throw new Error(`Failed to load miniapp content: ${error.message}`);
+    }
+  }
+
+  closeMiniApp() {
+    // Hide miniapp container and show main content
+    document.getElementById('miniapp-container').style.display = 'none';
+    document.getElementById('view-container').style.display = 'block';
+    
+    // Clear iframe content
+    document.getElementById('miniapp-frame').src = 'about:blank';
   }
 
   showSettingsModal() {

@@ -127,6 +127,17 @@ class SuperApp {
       return await this.dataManager.getStorageInfo(miniAppId);
     });
 
+    // File reading for embedded miniapps
+    ipcMain.handle('miniapps:readFile', async (event, filePath) => {
+      try {
+        const fs = require('fs').promises;
+        const content = await fs.readFile(filePath, 'utf8');
+        return { success: true, content };
+      } catch (error) {
+        return { success: false, error: error.message };
+      }
+    });
+
     // Encryption management
     ipcMain.handle('encryption:getStatus', async () => {
       return this.encryptionManager.getEncryptionStatus();

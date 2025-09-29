@@ -73,6 +73,62 @@ body {
   padding: var(--spacing-lg);
 }
 
+/* MiniApp Container */
+.miniapp-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+}
+
+.miniapp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+}
+
+.miniapp-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.miniapp-icon {
+  font-size: var(--font-size-xl);
+}
+
+.miniapp-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.miniapp-controls {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.miniapp-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.miniapp-content iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: white;
+}
+
 /* Buttons */
 .btn {
   padding: var(--spacing-sm) var(--spacing-md);

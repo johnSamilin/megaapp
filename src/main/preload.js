@@ -17,7 +17,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
     launch: (miniAppId) => ipcRenderer.invoke('miniapps:launch', miniAppId),
     install: (miniAppPath) => ipcRenderer.invoke('miniapps:install', miniAppPath),
     getTags: (miniAppId) => ipcRenderer.invoke('miniapps:getTags', miniAppId),
-    importTags: (miniAppId, tags) => ipcRenderer.invoke('miniapps:importTags', miniAppId, tags)
+    importTags: (miniAppId, tags) => ipcRenderer.invoke('miniapps:importTags', miniAppId, tags),
+    readFile: (filePath) => ipcRenderer.invoke('miniapps:readFile', filePath),
+    storage: {
+      setItem: (miniAppId, key, data) => ipcRenderer.invoke('data:store', miniAppId, key, data),
+      getItem: (miniAppId, key) => ipcRenderer.invoke('data:get', miniAppId, key),
+      getAllKeys: (miniAppId) => ipcRenderer.invoke('data:getAllKeys', miniAppId),
+      getAllData: (miniAppId) => ipcRenderer.invoke('data:getAllData', miniAppId),
+      removeItem: (miniAppId, key) => ipcRenderer.invoke('data:delete', miniAppId, key),
+      clear: (miniAppId) => ipcRenderer.invoke('data:clear', miniAppId),
+      hasItem: (miniAppId, key) => ipcRenderer.invoke('data:has', miniAppId, key),
+      getStorageInfo: (miniAppId) => ipcRenderer.invoke('data:getStorageInfo', miniAppId)
+    }
   },
 
   // Menu events
