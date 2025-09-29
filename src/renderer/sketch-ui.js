@@ -26,7 +26,7 @@ class SketchUI {
     
     document.body.appendChild(this.canvas);
     this.ctx = this.canvas.getContext('2d');
-    this.rough = rough.canvas(this.canvas);
+    this.rough = window.rough.canvas(this.canvas);
     
     this.setupCanvas();
     this.setupObserver();
