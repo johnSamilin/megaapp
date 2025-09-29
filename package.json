@@ -34,8 +34,7 @@
   "dependencies": {
     "crypto-js": "^4.2.0",
     "electron-store": "^8.1.0",
-    "sqlite3": "^5.1.6",
-    "crypto-js": "^4.2.0"
+    "sqlite3": "^5.1.6"
   },
   "build": {
     "appId": "com.superapp.electron",
