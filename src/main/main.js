@@ -42,7 +42,7 @@ class SuperApp {
       this.mainWindow.loadURL('http://localhost:3000');
       this.mainWindow.webContents.openDevTools();
     } else {
-      this.mainWindow.loadFile(path.join(__dirname, '../dist-renderer/index.html'));
+      this.mainWindow.loadFile(path.join(__dirname, '../../dist-renderer/index.html'));
     }
 
     this.mainWindow.once('ready-to-show', () => {
