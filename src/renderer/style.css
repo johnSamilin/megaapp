@@ -76,6 +76,8 @@
 html {
   font-size: 16px;
   line-height: 1.5;
+  /* Slightly reduce opacity to let sketch overlay show through */
+  opacity: 0.95;
 }
 
 body {
@@ -85,6 +87,11 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Paper-like texture background */
+  background-image: 
+    radial-gradient(circle at 1px 1px, rgba(0,0,0,.15) 1px, transparent 0);
+  background-size: 20px 20px;
+  background-color: #fefefe;
 }
 
 /* Layout Components */
@@ -257,6 +264,9 @@ body {
   transition: all var(--transition-fast);
   text-decoration: none;
   line-height: 1.5;
+  /* Reduce background opacity to show sketch overlay */
+  background-color: rgba(255, 255, 255, 0.8);
+  position: relative;
 }
 
 .btn:focus {
@@ -327,6 +337,12 @@ body {
   transition: all var(--transition-base);
   position: relative;
   overflow: hidden;
+  /* Semi-transparent to show sketch overlay */
+  background-color: rgba(255, 255, 255, 0.9);
+  /* Add slight paper texture */
+  box-shadow: 
+    var(--shadow-md),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.05);
 }
 
 .miniapp-card:hover {
@@ -505,6 +521,12 @@ body {
   overflow-y: auto;
   box-shadow: var(--shadow-xl);
   border: 1px solid var(--gray-200);
+  /* Semi-transparent background for sketch overlay */
+  background-color: rgba(255, 255, 255, 0.95);
+  /* Add paper-like texture */
+  background-image: 
+    linear-gradient(45deg, transparent 49%, rgba(0,0,0,0.02) 50%, transparent 51%);
+  background-size: 10px 10px;
 }
 
 .modal-header {

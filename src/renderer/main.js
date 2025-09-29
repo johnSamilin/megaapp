@@ -1,4 +1,5 @@
 import './style.css';
+import './sketch-ui.js';
 
 // Ensure theme variables are loaded
 document.documentElement.setAttribute('data-theme', __THEME__ || 'default');
