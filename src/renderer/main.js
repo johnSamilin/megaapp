@@ -1,4 +1,8 @@
 import './style.css';
+
+// Ensure theme variables are loaded
+document.documentElement.setAttribute('data-theme', __THEME__ || 'default');
+
 import { TagManager } from './components/TagManager.js';
 import { MiniAppGrid } from './components/MiniAppGrid.js';
 import { Sidebar } from './components/Sidebar.js';
