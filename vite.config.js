@@ -4,6 +4,7 @@ import { resolve } from 'path';
 export default defineConfig(({ mode }) => ({
   root: '.',
   build: {
+    base: './',
     outDir: 'dist-renderer',
     emptyOutDir: true,
   },
