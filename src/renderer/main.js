@@ -322,6 +322,204 @@ class SuperAppRenderer {
         <script>
           window.__MINIAPP_ID__ = '${miniAppId}';
           
+          // Monkey-patch localStorage to use our data storage API
+          (function() {
+            const originalLocalStorage = window.localStorage;
+            const storageAPI = {
+              setItem: (key, data) => {
+                return window.parent.electronAPI?.miniApps?.storage?.setItem?.('${miniAppId}', key, data) || 
+                       Promise.resolve({ success: false, error: 'API not available' });
+              },
+              getItem: (key) => {
+                return window.parent.electronAPI?.miniApps?.storage?.getItem?.('${miniAppId}', key) || 
+                       Promise.resolve(null);
+              },
+              getAllKeys: () => {
+                return window.parent.electronAPI?.miniApps?.storage?.getAllKeys?.('${miniAppId}') || 
+                       Promise.resolve([]);
+              },
+              getAllData: () => {
+                return window.parent.electronAPI?.miniApps?.storage?.getAllData?.('${miniAppId}') || 
+                       Promise.resolve({});
+              },
+              removeItem: (key) => {
+                return window.parent.electronAPI?.miniApps?.storage?.removeItem?.('${miniAppId}', key) || 
+                       Promise.resolve({ success: false });
+              },
+              clear: () => {
+                return window.parent.electronAPI?.miniApps?.storage?.clear?.('${miniAppId}') || 
+                       Promise.resolve({ success: false });
+              },
+              hasItem: (key) => {
+                return window.parent.electronAPI?.miniApps?.storage?.hasItem?.('${miniAppId}', key) || 
+                       Promise.resolve(false);
+              },
+              getStorageInfo: () => {
+                return window.parent.electronAPI?.miniApps?.storage?.getStorageInfo?.('${miniAppId}') || 
+                       Promise.resolve({ totalKeys: 0, totalSize: 0 });
+              }
+            };
+
+            // Create a cache for synchronous operations
+            let storageCache = {};
+            let cacheLoaded = false;
+            
+            // Load initial cache
+            const loadCache = async () => {
+              try {
+                const allData = await storageAPI.getAllData();
+                storageCache = {};
+                Object.keys(allData).forEach(key => {
+                  if (allData[key] && allData[key].data !== undefined) {
+                    storageCache[key] = JSON.stringify(allData[key].data);
+                  }
+                });
+                cacheLoaded = true;
+              } catch (error) {
+                console.warn('Failed to load storage cache:', error);
+                cacheLoaded = true; // Mark as loaded even on error to prevent infinite loading
+              }
+            };
+            
+            // Load cache immediately
+            loadCache();
+
+            // Create localStorage replacement
+            const localStorageReplacement = {
+              // Synchronous methods (using cache)
+              getItem: function(key) {
+                if (!cacheLoaded) {
+                  console.warn('Storage cache not loaded yet, returning null for key:', key);
+                  return null;
+                }
+                return storageCache[key] || null;
+              },
+              
+              setItem: function(key, value) {
+                // Update cache immediately for synchronous access
+                storageCache[key] = String(value);
+                
+                // Persist to backend asynchronously
+                try {
+                  const parsedValue = JSON.parse(value);
+                  storageAPI.setItem(key, parsedValue).catch(error => {
+                    console.error('Failed to persist localStorage item:', error);
+                    // Revert cache on error
+                    delete storageCache[key];
+                  });
+                } catch (parseError) {
+                  // If it's not JSON, store as string
+                  storageAPI.setItem(key, value).catch(error => {
+                    console.error('Failed to persist localStorage item:', error);
+                    delete storageCache[key];
+                  });
+                }
+              },
+              
+              removeItem: function(key) {
+                delete storageCache[key];
+                storageAPI.removeItem(key).catch(error => {
+                  console.error('Failed to remove localStorage item:', error);
+                });
+              },
+              
+              clear: function() {
+                storageCache = {};
+                storageAPI.clear().catch(error => {
+                  console.error('Failed to clear localStorage:', error);
+                });
+              },
+              
+              key: function(index) {
+                const keys = Object.keys(storageCache);
+                return keys[index] || null;
+              },
+              
+              get length() {
+                return Object.keys(storageCache).length;
+              }
+            };
+
+            // Add enumerable properties for key iteration
+            Object.defineProperty(localStorageReplacement, 'length', {
+              get: function() {
+                return Object.keys(storageCache).length;
+              },
+              enumerable: false,
+              configurable: false
+            });
+
+            // Make it behave like the real localStorage for property access
+            const handler = {
+              get: function(target, prop) {
+                if (prop in target) {
+                  return target[prop];
+                }
+                // Handle numeric indices
+                if (typeof prop === 'string' && /^\\d+$/.test(prop)) {
+                  return target.key(parseInt(prop));
+                }
+                // Handle string keys as properties
+                return target.getItem(prop);
+              },
+              
+              set: function(target, prop, value) {
+                if (prop in target || typeof prop === 'symbol') {
+                  target[prop] = value;
+                  return true;
+                }
+                target.setItem(prop, value);
+                return true;
+              },
+              
+              deleteProperty: function(target, prop) {
+                if (prop in target) {
+                  delete target[prop];
+                  return true;
+                }
+                target.removeItem(prop);
+                return true;
+              },
+              
+              ownKeys: function(target) {
+                return Object.keys(storageCache);
+              },
+              
+              has: function(target, prop) {
+                return prop in target || prop in storageCache;
+              },
+              
+              getOwnPropertyDescriptor: function(target, prop) {
+                if (prop in target) {
+                  return Object.getOwnPropertyDescriptor(target, prop);
+                }
+                if (prop in storageCache) {
+                  return {
+                    enumerable: true,
+                    configurable: true,
+                    value: storageCache[prop]
+                  };
+                }
+                return undefined;
+              }
+            };
+
+            // Replace localStorage with our proxy
+            window.localStorage = new Proxy(localStorageReplacement, handler);
+            
+            // Also replace it on the Storage prototype to catch any references
+            if (typeof Storage !== 'undefined') {
+              Object.defineProperty(window, 'localStorage', {
+                value: window.localStorage,
+                writable: false,
+                enumerable: true,
+                configurable: false
+              });
+            }
+            
+            console.log('localStorage monkey-patched for miniapp ${miniAppId}');
+          })();
+          
           // Expose miniAppAPI to the iframe
           window.miniAppAPI = {
             storage: {
