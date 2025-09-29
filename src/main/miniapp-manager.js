@@ -64,7 +64,7 @@ class MiniAppManager {
       const window = this.miniAppWindows.get(miniAppId);
       if (!window.isDestroyed()) {
         window.focus();
-        return;
+        return { success: true, action: 'focused', miniAppId };
       }
     }
 
@@ -117,7 +117,7 @@ class MiniAppManager {
       this.miniAppWindows.delete(miniAppId);
     });
 
-    return miniAppWindow;
+    return { success: true, action: 'launched', miniAppId, title: miniApp.name };
   }
 
   async installMiniApp(miniAppPath) {
