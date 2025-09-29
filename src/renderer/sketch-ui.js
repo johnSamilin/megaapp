@@ -1,3 +1,5 @@
+import rough from 'roughjs/bin/rough.js';
+
 // Sketch UI Manager using Rough.js
 class SketchUI {
   constructor() {
@@ -26,7 +28,7 @@ class SketchUI {
     
     document.body.appendChild(this.canvas);
     this.ctx = this.canvas.getContext('2d');
-    this.rough = window.rough.canvas(this.canvas);
+    this.rough = rough.canvas(this.canvas);
     
     this.setupCanvas();
     this.setupObserver();
