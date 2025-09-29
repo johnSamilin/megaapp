@@ -5,6 +5,7 @@ export default defineConfig(({ mode }) => {
   const theme = mode === 'punky' ? 'punky' : 'default';
   
   return {
+  }
   root: '.',
   build: {
     base: './',
@@ -28,3 +29,6 @@ export default defineConfig(({ mode }) => {
         additionalData: `@import "${resolve(__dirname, `src/renderer/themes/${theme}.scss`)}";`
       }
     }
+  }
+}
+)
