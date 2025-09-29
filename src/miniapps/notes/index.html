@@ -250,6 +250,44 @@
 
         // Initial render
         renderNotes();
+
+        // Example of using the new storage API
+        // Replace localStorage with miniAppAPI.storage for persistent data
+        async function loadNotesFromStorage() {
+            try {
+                const storedNotes = await window.miniAppAPI.storage.getItem('notes');
+                if (storedNotes && storedNotes.data) {
+                    notes = storedNotes.data;
+                    renderNotes();
+                }
+            } catch (error) {
+                console.log('No stored notes found, using localStorage fallback');
+                // Fallback to localStorage if storage API fails
+                notes = JSON.parse(localStorage.getItem('notes') || '[]');
+                renderNotes();
+            }
+        }
+
+        async function saveNotesToStorage() {
+            try {
+                await window.miniAppAPI.storage.setItem('notes', notes);
+            } catch (error) {
+                console.error('Failed to save to storage API, using localStorage fallback:', error);
+                localStorage.setItem('notes', JSON.stringify(notes));
+            }
+        }
+
+        // Override the existing functions to use the new storage API
+        const originalSaveNote = saveNote;
+        saveNote = function(title, content) {
+            originalSaveNote(title, content);
+            saveNotesToStorage();
+        };
+
+        // Load notes from storage on startup
+        if (window.miniAppAPI && window.miniAppAPI.storage) {
+            loadNotesFromStorage();
+        }
     </script>
 </body>
 </html>

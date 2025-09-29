@@ -2,17 +2,20 @@ const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const path = require('path');
 const { DatabaseManager } = require('./database');
 const { MiniAppManager } = require('./miniapp-manager');
+const { DataManager } = require('./data-manager');
 
 class SuperApp {
   constructor() {
     this.mainWindow = null;
     this.dbManager = new DatabaseManager();
     this.miniAppManager = new MiniAppManager();
+    this.dataManager = new DataManager();
     this.isDev = process.env.NODE_ENV === 'development';
   }
 
   async initialize() {
     await this.dbManager.initialize();
+    await this.dataManager.initialize();
     await this.miniAppManager.initialize();
     this.setupIPC();
   }
@@ -87,6 +90,39 @@ class SuperApp {
 
     ipcMain.handle('miniapps:importTags', async (event, miniAppId, tags) => {
       return await this.importTagsFromMiniApp(miniAppId, tags);
+    });
+
+    // Data storage API
+    ipcMain.handle('data:store', async (event, miniAppId, key, data) => {
+      return await this.dataManager.storeData(miniAppId, key, data);
+    });
+
+    ipcMain.handle('data:get', async (event, miniAppId, key) => {
+      return await this.dataManager.getData(miniAppId, key);
+    });
+
+    ipcMain.handle('data:getAllKeys', async (event, miniAppId) => {
+      return await this.dataManager.getAllKeys(miniAppId);
+    });
+
+    ipcMain.handle('data:getAllData', async (event, miniAppId) => {
+      return await this.dataManager.getAllData(miniAppId);
+    });
+
+    ipcMain.handle('data:delete', async (event, miniAppId, key) => {
+      return await this.dataManager.deleteData(miniAppId, key);
+    });
+
+    ipcMain.handle('data:clear', async (event, miniAppId) => {
+      return await this.dataManager.clearAllData(miniAppId);
+    });
+
+    ipcMain.handle('data:has', async (event, miniAppId, key) => {
+      return await this.dataManager.hasData(miniAppId, key);
+    });
+
+    ipcMain.handle('data:getStorageInfo', async (event, miniAppId) => {
+      return await this.dataManager.getStorageInfo(miniAppId);
     });
   }
 

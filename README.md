@@ -272,6 +272,43 @@ Add to `src/main/miniapp-manager.js` in the `loadBuiltInMiniApps()` method:
 
 MiniApps can use various storage methods:
 
+#### MiniApp Storage API (Recommended)
+The SuperApp provides a secure, isolated storage API similar to IndexedDB:
+
+```javascript
+// Store data
+await window.miniAppAPI.storage.setItem('myData', { key: 'value' });
+
+// Retrieve data
+const result = await window.miniAppAPI.storage.getItem('myData');
+const data = result ? result.data : null;
+
+// Get all keys
+const keys = await window.miniAppAPI.storage.getAllKeys();
+
+// Get all data
+const allData = await window.miniAppAPI.storage.getAllData();
+
+// Check if data exists
+const exists = await window.miniAppAPI.storage.hasItem('myData');
+
+// Remove data
+await window.miniAppAPI.storage.removeItem('myData');
+
+// Clear all data
+await window.miniAppAPI.storage.clear();
+
+// Get storage information
+const info = await window.miniAppAPI.storage.getStorageInfo();
+console.log(`Total keys: ${info.totalKeys}, Total size: ${info.totalSize} bytes`);
+```
+
+**Security Features:**
+- Each miniapp has its own isolated data directory
+- Data is stored in `{userData}/miniapp-data/{miniappId}/`
+- Only the miniapp that created the data can access it
+- Automatic access control prevents cross-miniapp data access
+
 #### Local Storage
 ```javascript
 // Store data

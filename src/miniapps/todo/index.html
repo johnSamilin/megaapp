@@ -164,7 +164,31 @@
         let todos = JSON.parse(localStorage.getItem('todos') || '[]');
 
         function saveTodos() {
-            localStorage.setItem('todos', JSON.stringify(todos));
+            // Use the new storage API if available, fallback to localStorage
+            if (window.miniAppAPI && window.miniAppAPI.storage) {
+                window.miniAppAPI.storage.setItem('todos', todos).catch(error => {
+                    console.error('Failed to save to storage API, using localStorage fallback:', error);
+                    localStorage.setItem('todos', JSON.stringify(todos));
+                });
+            } else {
+                localStorage.setItem('todos', JSON.stringify(todos));
+            }
+        }
+
+        async function loadTodos() {
+            if (window.miniAppAPI && window.miniAppAPI.storage) {
+                try {
+                    const storedTodos = await window.miniAppAPI.storage.getItem('todos');
+                    if (storedTodos && storedTodos.data) {
+                        todos = storedTodos.data;
+                        return;
+                    }
+                } catch (error) {
+                    console.log('No stored todos found, using localStorage fallback');
+                }
+            }
+            // Fallback to localStorage
+            todos = JSON.parse(localStorage.getItem('todos') || '[]');
         }
 
         function renderTodos() {
@@ -242,7 +266,12 @@
         });
 
         // Initial render
-        renderTodos();
+        // Load todos and then render
+        if (window.miniAppAPI && window.miniAppAPI.storage) {
+            loadTodos().then(() => renderTodos());
+        } else {
+            renderTodos();
+        }
     </script>
 </body>
 </html>

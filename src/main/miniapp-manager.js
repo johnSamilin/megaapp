@@ -89,10 +89,20 @@ class MiniAppManager {
     try {
       await fs.access(miniAppPath);
       miniAppWindow.loadFile(miniAppPath);
+      
+      // Inject miniapp ID into the window
+      miniAppWindow.webContents.once('dom-ready', () => {
+        miniAppWindow.webContents.executeJavaScript(`
+          window.__MINIAPP_ID__ = '${miniAppId}';
+        `);
+      });
     } catch (error) {
       // Fallback to a default miniapp template
       miniAppWindow.loadFile(path.join(__dirname, '../miniapps/template/index.html'));
       miniAppWindow.webContents.once('dom-ready', () => {
+        miniAppWindow.webContents.executeJavaScript(`
+          window.__MINIAPP_ID__ = '${miniAppId}';
+        `);
         miniAppWindow.webContents.executeJavaScript(`
           document.title = '${miniApp.name}';
           document.querySelector('h1').textContent = '${miniApp.name}';
