@@ -56,8 +56,15 @@ class SketchUI {
 
   setupObserver() {
     // Observe DOM changes to update sketch elements
+    let updateTimeout = null;
     const observer = new MutationObserver(() => {
-      this.updateSketchElements();
+      // Debounce updates to avoid excessive redraws
+      if (updateTimeout) {
+        clearTimeout(updateTimeout);
+      }
+      updateTimeout = setTimeout(() => {
+        this.updateSketchElements();
+      }, 100);
     });
     
     observer.observe(document.body, {
@@ -68,12 +75,11 @@ class SketchUI {
     });
     
     // Initial scan
-    setTimeout(() => this.updateSketchElements(), 100);
+    setTimeout(() => this.updateSketchElements(), 500);
   }
 
   updateSketchElements() {
-    // Clear existing elements
-    this.elements.clear();
+    const newElements = new Map();
     
     // Find elements to sketch
     const sketchableElements = document.querySelectorAll(`
@@ -91,8 +97,22 @@ class SketchUI {
       if (el.offsetParent !== null) { // Only visible elements
         const rect = el.getBoundingClientRect();
         const type = this.getElementType(el);
+        const elementId = `element-${index}`;
         
-        this.elements.set(`element-${index}`, {
+        // Check if element position/size changed significantly
+        const existing = this.elements.get(elementId);
+        if (existing && 
+            Math.abs(existing.rect.left - rect.left) < 2 &&
+            Math.abs(existing.rect.top - rect.top) < 2 &&
+            Math.abs(existing.rect.width - rect.width) < 2 &&
+            Math.abs(existing.rect.height - rect.height) < 2 &&
+            existing.type === type) {
+          // Reuse existing element data
+          newElements.set(elementId, existing);
+          return;
+        }
+        
+        newElements.set(elementId, {
           element: el,
           rect: rect,
           type: type,
@@ -101,7 +121,32 @@ class SketchUI {
       }
     });
     
-    this.redrawAll();
+    // Only update if elements actually changed
+    if (newElements.size !== this.elements.size || 
+        !this.mapsEqual(newElements, this.elements)) {
+      this.elements = newElements;
+      this.redrawAll();
+    }
+  }
+
+  mapsEqual(map1, map2) {
+    if (map1.size !== map2.size) return false;
+    
+    for (let [key, value1] of map1) {
+      const value2 = map2.get(key);
+      if (!value2) return false;
+      
+      // Compare key properties
+      if (value1.type !== value2.type ||
+          Math.abs(value1.rect.left - value2.rect.left) >= 2 ||
+          Math.abs(value1.rect.top - value2.rect.top) >= 2 ||
+          Math.abs(value1.rect.width - value2.rect.width) >= 2 ||
+          Math.abs(value1.rect.height - value2.rect.height) >= 2) {
+        return false;
+      }
+    }
+    
+    return true;
   }
 
   getElementType(element) {
@@ -314,22 +359,35 @@ class SketchUI {
   }
 
   startAnimation() {
-    const animate = () => {
-      this.redrawAll();
+    let lastAnimationTime = 0;
+    const animationInterval = 1000 / 15; // 15fps instead of 30fps
+    
+    const animate = (currentTime) => {
+      if (currentTime - lastAnimationTime >= animationInterval) {
+        if (this.elements.size > 0) {
+          this.redrawAll();
+        }
+        lastAnimationTime = currentTime;
+      }
       this.animationId = requestAnimationFrame(animate);
     };
     
-    // Animate at 30fps for smooth sketch effect
-    setInterval(() => {
+    this.animationId = requestAnimationFrame(animate);
+    
+    // Also add a slower interval-based update for when tab is not visible
+    this.intervalId = setInterval(() => {
       if (this.elements.size > 0) {
         this.redrawAll();
       }
-    }, 1000 / 30);
+    }, 1000); // 1fps fallback
   }
 
   destroy() {
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
+    }
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
     }
     if (this.canvas && this.canvas.parentNode) {
       this.canvas.parentNode.removeChild(this.canvas);
