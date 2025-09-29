@@ -3,6 +3,7 @@ const path = require('path');
 const { DatabaseManager } = require('./database');
 const { MiniAppManager } = require('./miniapp-manager');
 const { DataManager } = require('./data-manager');
+const { EncryptionManager } = require('./encryption-manager');
 
 class SuperApp {
   constructor() {
@@ -10,6 +11,7 @@ class SuperApp {
     this.dbManager = new DatabaseManager();
     this.miniAppManager = new MiniAppManager();
     this.dataManager = new DataManager();
+    this.encryptionManager = new EncryptionManager();
     this.isDev = process.env.NODE_ENV === 'development';
   }
 
@@ -123,6 +125,35 @@ class SuperApp {
 
     ipcMain.handle('data:getStorageInfo', async (event, miniAppId) => {
       return await this.dataManager.getStorageInfo(miniAppId);
+    });
+
+    // Encryption management
+    ipcMain.handle('encryption:getStatus', async () => {
+      return this.encryptionManager.getEncryptionStatus();
+    });
+
+    ipcMain.handle('encryption:setMasterPassword', async (event, password) => {
+      this.encryptionManager.setMasterPassword(password);
+      this.encryptionManager.storeMasterPasswordHash();
+      return { success: true };
+    });
+
+    ipcMain.handle('encryption:verifyMasterPassword', async (event, password) => {
+      return this.encryptionManager.verifyMasterPassword(password);
+    });
+
+    ipcMain.handle('encryption:setEnabled', async (event, enabled) => {
+      this.encryptionManager.setEncryptionEnabled(enabled);
+      return { success: true };
+    });
+
+    ipcMain.handle('encryption:changeMasterPassword', async (event, oldPassword, newPassword) => {
+      return this.encryptionManager.changeMasterPassword(oldPassword, newPassword);
+    });
+
+    ipcMain.handle('encryption:removeMasterPassword', async () => {
+      this.encryptionManager.removeMasterPassword();
+      return { success: true };
     });
   }
 

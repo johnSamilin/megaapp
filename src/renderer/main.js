@@ -203,6 +203,13 @@ class SuperAppRenderer {
         </div>
         <div class="modal-body">
           <div class="settings-section">
+            <h3>Data Encryption</h3>
+            <p class="text-muted">Encrypt miniapp data with a master password for enhanced security.</p>
+            <div class="encryption-controls" id="encryption-controls">
+              <div class="loading">Loading encryption status...</div>
+            </div>
+          </div>
+          <div class="settings-section">
             <h3>Tag Management</h3>
             <p class="text-muted">Import tags from your miniapps to organize content across the superapp.</p>
             <button class="btn btn-primary" id="import-tags-btn">Import Tags from MiniApp</button>
@@ -212,6 +219,7 @@ class SuperAppRenderer {
     `;
 
     document.body.appendChild(modal);
+    this.loadEncryptionStatus(modal);
 
     // Event listeners
     modal.querySelector('.modal-close').addEventListener('click', () => {
@@ -227,6 +235,152 @@ class SuperAppRenderer {
     modal.querySelector('#import-tags-btn').addEventListener('click', () => {
       document.body.removeChild(modal);
       this.showTagImportModal();
+    });
+  }
+
+  async loadEncryptionStatus(modal) {
+    try {
+      const status = await window.electronAPI.encryption.getStatus();
+      const container = modal.querySelector('#encryption-controls');
+      
+      container.innerHTML = `
+        <div class="encryption-status">
+          <div class="form-group">
+            <label class="form-label">
+              <input type="checkbox" id="encryption-toggle" ${status.enabled ? 'checked' : ''}>
+              Enable Data Encryption
+            </label>
+          </div>
+          <div class="encryption-password-section" style="display: ${status.hasPassword ? 'block' : 'none'};">
+            <div class="form-group">
+              <label class="form-label">Master Password Status</label>
+              <div class="password-status">
+                <span class="status-indicator ${status.keyLoaded ? 'success' : 'warning'}">
+                  ${status.keyLoaded ? '🔓 Password loaded' : '🔒 Password required'}
+                </span>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-secondary" id="change-password-btn">Change Password</button>
+              <button class="btn btn-danger" id="remove-password-btn">Remove Password</button>
+            </div>
+          </div>
+          <div class="encryption-setup-section" style="display: ${status.hasPassword ? 'none' : 'block'};">
+            <div class="form-group">
+              <label class="form-label" for="master-password">Set Master Password</label>
+              <input type="password" id="master-password" class="form-input" placeholder="Enter master password (min 8 characters)">
+            </div>
+            <button class="btn btn-primary" id="set-password-btn">Set Password</button>
+          </div>
+        </div>
+      `;
+
+      this.setupEncryptionEventListeners(modal, status);
+    } catch (error) {
+      console.error('Failed to load encryption status:', error);
+      modal.querySelector('#encryption-controls').innerHTML = `
+        <div class="text-danger">Failed to load encryption settings</div>
+      `;
+    }
+  }
+
+  setupEncryptionEventListeners(modal, initialStatus) {
+    const toggle = modal.querySelector('#encryption-toggle');
+    const setPasswordBtn = modal.querySelector('#set-password-btn');
+    const changePasswordBtn = modal.querySelector('#change-password-btn');
+    const removePasswordBtn = modal.querySelector('#remove-password-btn');
+    const masterPasswordInput = modal.querySelector('#master-password');
+
+    // Encryption toggle
+    toggle.addEventListener('change', async (e) => {
+      try {
+        if (e.target.checked && !initialStatus.hasPassword) {
+          e.target.checked = false;
+          alert('Please set a master password first before enabling encryption.');
+          return;
+        }
+
+        if (e.target.checked && !initialStatus.keyLoaded) {
+          const password = prompt('Enter master password to enable encryption:');
+          if (!password) {
+            e.target.checked = false;
+            return;
+          }
+
+          const verified = await window.electronAPI.encryption.verifyMasterPassword(password);
+          if (!verified) {
+            e.target.checked = false;
+            alert('Incorrect password. Encryption not enabled.');
+            return;
+          }
+        }
+
+        await window.electronAPI.encryption.setEnabled(e.target.checked);
+        alert(`Encryption ${e.target.checked ? 'enabled' : 'disabled'} successfully.`);
+      } catch (error) {
+        e.target.checked = !e.target.checked;
+        alert('Failed to toggle encryption: ' + error.message);
+      }
+    });
+
+    // Set master password
+    setPasswordBtn?.addEventListener('click', async () => {
+      const password = masterPasswordInput.value;
+      if (!password || password.length < 8) {
+        alert('Password must be at least 8 characters long.');
+        return;
+      }
+
+      try {
+        await window.electronAPI.encryption.setMasterPassword(password);
+        alert('Master password set successfully!');
+        document.body.removeChild(modal);
+        this.showSettingsModal(); // Refresh the modal
+      } catch (error) {
+        alert('Failed to set password: ' + error.message);
+      }
+    });
+
+    // Change master password
+    changePasswordBtn?.addEventListener('click', async () => {
+      const oldPassword = prompt('Enter current master password:');
+      if (!oldPassword) return;
+
+      const newPassword = prompt('Enter new master password (min 8 characters):');
+      if (!newPassword || newPassword.length < 8) {
+        alert('New password must be at least 8 characters long.');
+        return;
+      }
+
+      try {
+        await window.electronAPI.encryption.changeMasterPassword(oldPassword, newPassword);
+        alert('Master password changed successfully!');
+      } catch (error) {
+        alert('Failed to change password: ' + error.message);
+      }
+    });
+
+    // Remove master password
+    removePasswordBtn?.addEventListener('click', async () => {
+      if (!confirm('This will remove the master password and disable encryption. Are you sure?')) {
+        return;
+      }
+
+      try {
+        await window.electronAPI.encryption.removeMasterPassword();
+        alert('Master password removed and encryption disabled.');
+        document.body.removeChild(modal);
+        this.showSettingsModal(); // Refresh the modal
+      } catch (error) {
+        alert('Failed to remove password: ' + error.message);
+      }
+    });
+
+    // Enter key for password input
+    masterPasswordInput?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        setPasswordBtn.click();
+      }
     });
   }
 

@@ -23,5 +23,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Menu events
   onMenuAction: (callback) => {
     ipcRenderer.on('menu:install-miniapp', callback);
+  },
+
+  // Encryption management
+  encryption: {
+    getStatus: () => ipcRenderer.invoke('encryption:getStatus'),
+    setMasterPassword: (password) => ipcRenderer.invoke('encryption:setMasterPassword', password),
+    verifyMasterPassword: (password) => ipcRenderer.invoke('encryption:verifyMasterPassword', password),
+    setEnabled: (enabled) => ipcRenderer.invoke('encryption:setEnabled', enabled),
+    changeMasterPassword: (oldPassword, newPassword) => ipcRenderer.invoke('encryption:changeMasterPassword', oldPassword, newPassword),
+    removeMasterPassword: () => ipcRenderer.invoke('encryption:removeMasterPassword')
   }
 });

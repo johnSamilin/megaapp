@@ -1,4 +1,5 @@
 const fs = require('fs').promises;
+const { EncryptionManager } = require('./encryption-manager');
 const path = require('path');
 const { app } = require('electron');
 
@@ -6,6 +7,7 @@ class DataManager {
   constructor() {
     this.dataPath = path.join(app.getPath('userData'), 'miniapp-data');
     this.initialized = false;
+    this.encryptionManager = new EncryptionManager();
   }
 
   async initialize() {
@@ -48,7 +50,7 @@ class DataManager {
       
       const dataToStore = {
         key,
-        data,
+        data: this.encryptionManager.encrypt(data),
         timestamp: new Date().toISOString(),
         miniAppId
       };
@@ -79,9 +81,11 @@ class DataManager {
         throw new Error('Access denied: Data belongs to different miniapp');
       }
 
+      // Decrypt data if encrypted
+      const decryptedData = this.encryptionManager.decrypt(storedData.data);
       return {
         key: storedData.key,
-        data: storedData.data,
+        data: decryptedData,
         timestamp: storedData.timestamp
       };
     } catch (error) {
