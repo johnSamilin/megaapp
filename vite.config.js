@@ -1,8 +1,8 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import { resolve } from 'path';
+const { defineConfig } = require('vite');
+const react = require('@vitejs/plugin-react');
+const { resolve } = require('path');
 
-export default defineConfig(({ mode }) => {
+module.exports = defineConfig(({ mode }) => {
   const theme = mode === 'punky' ? 'punky' : 'default';
   
   return {
