@@ -6,13 +6,13 @@
   "scripts": {
     "start": "electron .",
     "dev": "concurrently \"npm run dev:renderer\" \"wait-on http://localhost:3000 && electron .\"",
-    "dev:renderer": "vite --mode development",
+    "dev:renderer": "node -e \"require('./esbuild.config.js').serve()\"",
     "dev:punky": "concurrently \"npm run dev:renderer:punky\" \"wait-on http://localhost:3000 && electron .\"",
-    "dev:renderer:punky": "vite --mode punky",
-    "build": "vite build && electron-builder",
-    "build:punky": "vite build --mode punky && electron-builder",
-    "build:renderer": "vite build",
-    "build:renderer:punky": "vite build --mode punky",
+    "dev:renderer:punky": "THEME=punky node -e \"require('./esbuild.config.js').serve()\"",
+    "build": "npm run build:renderer && electron-builder",
+    "build:punky": "npm run build:renderer:punky && electron-builder",
+    "build:renderer": "node -e \"require('./esbuild.config.js').build()\"",
+    "build:renderer:punky": "THEME=punky node -e \"require('./esbuild.config.js').build()\"",
     "postinstall": "electron-builder install-app-deps"
   },
   "keywords": [
@@ -24,12 +24,11 @@
   "author": "SuperApp Developer",
   "license": "MIT",
   "devDependencies": {
-    "@vitejs/plugin-react": "^5.0.4",
     "concurrently": "^8.2.2",
     "electron": "^28.0.0",
     "electron-builder": "^24.6.4",
-    "sass": "^1.92.0",
-    "vite": "^5.0.0",
+    "esbuild": "^0.25.10",
+    "sass": "^1.93.2",
     "wait-on": "^7.2.0"
   },
   "dependencies": {
