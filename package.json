@@ -24,6 +24,7 @@
   "author": "SuperApp Developer",
   "license": "MIT",
   "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.4",
     "concurrently": "^8.2.2",
     "electron": "^28.0.0",
     "electron-builder": "^24.6.4",

@@ -1,10 +1,12 @@
 import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 
 export default defineConfig(({ mode }) => {
   const theme = mode === 'punky' ? 'punky' : 'default';
   
   return {
+    plugins: [react()],
     root: '.',
     build: {
       base: './',
