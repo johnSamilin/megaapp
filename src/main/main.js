@@ -12,7 +12,7 @@ class SuperApp {
     this.miniAppManager = new MiniAppManager();
     this.dataManager = new DataManager();
     this.encryptionManager = new EncryptionManager();
-    this.isDev = process.env.NODE_ENV === 'development';
+    this.isDev = process.env.VITE_ENV === 'development';
   }
 
   async initialize() {

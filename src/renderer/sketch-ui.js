@@ -32,7 +32,7 @@ class SketchUI {
     
     this.setupCanvas();
     this.setupObserver();
-    this.startAnimation();
+    // this.startAnimation(); 
   }
 
   setupCanvas() {
